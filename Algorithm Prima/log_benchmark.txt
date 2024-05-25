@@ -1,0 +1,14 @@
+Graph vertexes: 100 edges percent: 2 amount of measurements: 1000 default algorithm time: 116.324 parallel algorithm time: 90.1459
+Graph vertexes: 100 edges percent: 10 amount of measurements: 100 default algorithm time: 24.9536 s parallel algorithm time: 24.4981 s
+Graph vertexes: 100 edges percent: 1 amount of measurements: 1000 default algorithm time: 3.9821 s parallel algorithm time: 3.89672 s
+Graph vertexes: 100 edges percent: 1 amount of measurements: 1000 default algorithm time: 3.88631 s parallel algorithm time: 3.91714 s
+Graph vertexes: 200 edges percent: 1 amount of measurements: 50 default algorithm time: 1.00079 s parallel algorithm time: 0.862922 s
+Graph vertexes: 200 edges percent: 0.3 amount of measurements: 1000 default algorithm time: 7.77555 s parallel algorithm time: 7.2432 s
+Graph vertexes: 200 edges percent: 0.3 amount of measurements: 1000 default algorithm time: 6.90788 s parallel algorithm time: 7.08987 s
+Graph vertexes: 200 edges percent: 0.05 amount of measurements: 1000 default algorithm time: 8.05021 s parallel algorithm time: 8.24576 s
+Graph vertexes: 200 edges percent: 3 amount of measurements: 1000 default algorithm time: 19.0161 s parallel algorithm time: 18.0593 s
+Graph vertexes: 200 edges percent: 5 amount of measurements: 1000 default algorithm time: 19.2818 s parallel algorithm time: 18.0004 s
+Graph vertexes: 200 edges percent: 8 amount of measurements: 1000 default algorithm time: 19.3373 s parallel algorithm time: 18.3909 s
+Graph vertexes: 200 edges percent: 12 amount of measurements: 1000 default algorithm time: 20.2517 s parallel algorithm time: 18.9043 s
+Graph vertexes: 500 edges percent: 0.1 amount of measurements: 100 default algorithm time: 2.47015 s parallel algorithm time: 2.21652 s
+Graph vertexes: 500 edges percent: 0.5 amount of measurements: 200 default algorithm time: 22.5924 s parallel algorithm time: 20.1282 s

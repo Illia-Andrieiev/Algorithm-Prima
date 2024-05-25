@@ -5,6 +5,7 @@
 #include<list>
 #include <set>
 #include <thread>
+#include<fstream>
 Edge::Edge(int v1, int v2, double weight) {
     if (v1 < 0)
         v1 = 0;
@@ -107,7 +108,7 @@ void Graph::determineHomomrphizmForVertex(int curHomomorphism, int position, std
 std::vector<int> Graph::fillPositionsHomomorphism(std::vector<int>& homomorphism, const std::vector<Graph>& components) const{
     int n = 0;
     for (auto& component : components) {
-        n += component.matrix.size();
+        n += (int)component.matrix.size();
     }
     homomorphism.clear();
     for (int i = 0; i < n; i++) {
@@ -152,52 +153,70 @@ Graph Graph::findMinSpanningTree(const Graph& graph) const{
     spanningTree.matrix.resize(n);
     for (auto& row : spanningTree.matrix)
         row.resize(n, std::numeric_limits<double>::infinity());
-    for (int i = 0; i < n; i++)
-        spanningTree.homomorphism.push_back(i);
-    std::set<int> visited, unvisited; //visited unvisited vertexes
-    std::vector<Edge> treeEdges; // tree edges
-    //visit first vertex
-    for (int v = 0; v < n; v++)
-        unvisited.insert(v); 
-    visited.insert(0);
-    unvisited.erase(0);
-    for (int i = 0; i < n; i++)
+    spanningTree.homomorphism = graph.homomorphism;
+    //std::set<int> visited, unvisited; //visited unvisited vertexes
+    //std::vector<Edge> treeEdges; // tree edges
+    ////visit first vertex
+    //for (int v = 0; v < n; v++)
+    //    unvisited.insert(v); 
+    //visited.insert(0);
+    //unvisited.erase(0);
+    //for (int i = 0; i < n; i++)
+    //    spanningTree.matrix[i][i] = 0;
+    //// Initialize Finish -> Start main loop
+    //while (!unvisited.empty()) {
+    //    Edge edge(std::numeric_limits<int>::infinity(), std::numeric_limits<int>::infinity(),
+    //        std::numeric_limits<double>::infinity());// start edge with infinity params
+
+    //    for (const auto& from : visited) {//for all visited vertexes
+    //        for (int to = 0; to < n; to++) {  //choose minimum edge
+    //            if (from != to) {
+    //                bool isUnvisitedVertex = unvisited.find(to) != unvisited.end();
+    //                bool isEdgeExists = graph.matrix[from][to] == std::numeric_limits<double>::infinity() ? false : true;
+
+    //                if (isEdgeExists && isUnvisitedVertex) {
+    //                    if (edge.weight > graph.matrix[from][to])
+    //                        edge = { from, to, graph.matrix[from][to] };
+    //                }
+    //            }
+    //        }
+    //    }
+    //    if (edge.weight != std::numeric_limits<double>::infinity()) {
+    //        treeEdges.emplace_back(edge);
+    //        visited.insert(edge.v2);
+    //        unvisited.erase(edge.v2);
+    //    }
+    //    else {
+    //        break;
+    //    }
+    //}
+    //// Add edges in tree
+    //for (const auto& edge : treeEdges) {
+    //    spanningTree.matrix[edge.v1][edge.v2] = edge.weight;
+    //    spanningTree.matrix[edge.v2][edge.v1] = edge.weight;
+    //}
+    std::vector<bool> used(n);
+    std::vector<double> minE(n, std::numeric_limits<double>::infinity()), selE(n, -1);
+    minE[0] = 0;
+    for (int i = 0; i < n; ++i) {
         spanningTree.matrix[i][i] = 0;
-    // Initialize Finish -> Start main loop
-    while (!unvisited.empty()) {
-        Edge edge(std::numeric_limits<int>::infinity(), std::numeric_limits<int>::infinity(),
-            std::numeric_limits<double>::infinity());// start edge with infinity params
-
-        for (const auto& from : visited) {//for all visited vertexes
-            for (int to = 0; to < n; to++) {  //choose minimum edge
-                if (from != to) {
-                    bool isUnvisitedVertex = unvisited.find(to) != unvisited.end();
-                    bool isEdgeExists = graph.matrix[from][to] == std::numeric_limits<double>::infinity() ? false : true;
-
-                    if (isEdgeExists && isUnvisitedVertex) {
-                        if (edge.weight > graph.matrix[from][to])
-                            edge = { from, to, graph.matrix[from][to] };
-                    }
-                }
+        int v = -1;
+        for (int j = 0; j < n; ++j)
+            if (!used[j] && (v == -1 || minE[j] < minE[v]))
+                v = j;
+        if (minE[v] == std::numeric_limits<double>::infinity()) {
+            exit(0);
+        }
+        used[v] = true;
+        if (selE[v] != -1) {
+            spanningTree.addEdge(v, selE[v],graph.matrix[v][selE[v]]);
+        }
+        for (int to = 0; to < n; ++to)
+            if (graph.matrix[v][to] < minE[to]) {
+                minE[to] = graph.matrix[v][to];
+                selE[to] = v;
             }
-        }
-
-        if (edge.weight != std::numeric_limits<double>::infinity()) {
-            treeEdges.emplace_back(edge);
-            visited.insert(edge.v2);
-            unvisited.erase(edge.v2);
-        }
-        else {
-            break;
-        }
     }
-
-    // Add edges in tree
-    for (const auto& edge : treeEdges) {
-        spanningTree.matrix[edge.v1][edge.v2] = edge.weight;
-        spanningTree.matrix[edge.v2][edge.v1] = edge.weight;
-    }
-
     return spanningTree;
 }
 std::vector<Graph> Graph::findMinSpanningForest() const {
@@ -285,22 +304,19 @@ std::vector<Graph> Graph::parallel_findMinSpanningForest() {
     std::vector<Graph> minSpanningForest;
     bool isReady = false;
     std::thread t1(&Graph::parallel_findConnectComponents, this, std::ref(connectionComponents), std::ref(isReady));
-    std::thread t2([&]() {
-        std::unique_lock<std::mutex> lock(mtx);
-        while (!isReady) {
-            cv.wait(lock);
-            while (!connectionComponents.empty()) {
-                minSpanningForest.push_back(findMinSpanningTree(connectionComponents.back()));
-                connectionComponents.pop_back();
-            }
+    std::unique_lock<std::mutex> lock(mtx);
+    while (!isReady) {
+        cv.wait(lock);
+        while (!connectionComponents.empty()) {
+            minSpanningForest.push_back(findMinSpanningTree(connectionComponents.back()));
+            connectionComponents.pop_back();
         }
-        });
+    }
     t1.join();
-    t2.join();
     return minSpanningForest;
 }
 int Graph::size() const{
-    return matrix.size();
+    return (int)matrix.size();
 }
 double Graph::findGraphWeight() const {
     double weight = 0;
@@ -311,4 +327,67 @@ double Graph::findGraphWeight() const {
         }
     }
     return weight;  
+}
+void Graph::addEdge(int vertex1, int vertex2, double weight) {
+    if (vertex1 < 0 || vertex2 < 0 || vertex1 >= matrix.size()||vertex2 >=  matrix.size())
+        return;
+    if (vertex1 == vertex2)
+        weight = 0;
+    matrix[vertex2][vertex1] = weight;
+    matrix[vertex1][vertex2] = weight;
+}
+void Graph::removeEdge(int vertex1, int vertex2) {
+    if (vertex1 < 0 || vertex2 < 0 || vertex1 >= matrix.size() || vertex2 >= matrix.size())
+        return;
+    matrix[vertex2][vertex1] = std::numeric_limits<double>::infinity();
+    matrix[vertex1][vertex2] = std::numeric_limits<double>::infinity();
+}
+std::vector<std::vector<double>> Graph::getAdjacencyMatrix() const {
+    return matrix;
+}
+/*
+    Benchmark
+*/
+std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::sameGraphBenchMark(int n,
+    double edgesPercent, unsigned amountOfMeasurements) {
+    int printEvery = 50;
+     Graph graph(n, -1000, 1000, edgesPercent);
+     int amount = amountOfMeasurements;
+    // start counting
+    auto startDefault = std::chrono::high_resolution_clock::now();
+    while (amount > 0) {
+        amount--;
+        if (amount % printEvery == 0)
+            std::cout << "default " << amount << std::endl;
+        graph.findMinSpanningForest();
+    }
+    // stop counting
+    auto endDefault = std::chrono::high_resolution_clock::now();
+    // find time
+    std::chrono::duration<double> resTimeDefault = endDefault - startDefault;
+    amount = amountOfMeasurements;
+    // start counting
+    auto startParallel = std::chrono::high_resolution_clock::now();
+    while (amount > 0) {
+        amount--;
+        if(amount%printEvery ==0)
+           std::cout << "parallel " << amount << std::endl;
+        graph.parallel_findMinSpanningForest();
+    }
+    // stop counting
+    auto endParallel = std::chrono::high_resolution_clock::now();
+    // find time
+    std::chrono::duration<double> resTimeParallel = endParallel - startParallel;
+    // log
+    std::cout<<std::endl << "Graph vertexes: " << n << " edges percent: " << edgesPercent << " amount of measurements: " << amountOfMeasurements <<
+        " default algorithm time: " << resTimeDefault.count() << " s" << " parallel algorithm time: " << resTimeParallel.count() << " s" << std::endl;
+    std::fstream log;
+    log.open("log_benchmark.txt", std::ios::app | std::ios::in | std::ios::out);
+    log << "Graph vertexes: " << n << " edges percent: " << edgesPercent << " amount of measurements: " << amountOfMeasurements <<
+        " default algorithm time: " << resTimeDefault.count()<<" s" << " parallel algorithm time: " << resTimeParallel.count() << " s" << std::endl;
+    log.close();
+    return std::pair<std::chrono::duration<double>, std::chrono::duration<double>>(resTimeDefault, resTimeParallel);
+}
+void Graph::differentGraphsBenchMark(int n, double minWeight, double maxWeight, double edgesPercent) {
+
 }
