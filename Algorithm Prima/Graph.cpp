@@ -47,7 +47,7 @@ void Graph::print() {
     }
     std::cout << "vertexes homomorphism: " << std::endl;
     for (int i = 0; i < matrix.size(); i++) {
-        std::cout << i<<"->"<< renamingList[i]<<"; " << std::endl;
+        std::cout << i<<"->"<< renamingList[i]<<"; ";
     }
 }
 Graph::Graph() {}
@@ -56,8 +56,62 @@ Graph::Graph(int n, double minWeight, double maxWeight,double edgesPercent) {
     this->matrix = g.matrix;
     this->renamingList = g.renamingList;
 }
-Graph::Graph(const std::vector<Graph>& connectComponentsList) {
-
+bool Graph::isHomomorphismContainsNomer(const std::vector<int>& homomorphism, int nomer) {
+    for (int i = 0; i < homomorphism.size(); i++) {
+        if (homomorphism[i] == nomer)
+            return true;
+    }
+    return false;
+}
+void Graph::determineHomomrphizmForVertex(int curHomomorphism, int position, std::vector<int>& homomorphism) {
+    if (curHomomorphism >= homomorphism.size())
+        curHomomorphism = 0;
+    while(isHomomorphismContainsNomer(homomorphism, curHomomorphism)) {
+        curHomomorphism++;
+        if (curHomomorphism >= homomorphism.size())
+            curHomomorphism = 0;
+    }
+    homomorphism[position] = curHomomorphism;
+}
+std::vector<int> Graph::fillPositionsHomomorphism(std::vector<int>& homomorphism, const std::vector<Graph>& components) {
+    int n = 0;
+    for (auto& component : components) {
+        n += component.matrix.size();
+    }
+    homomorphism.clear();
+    for (int i = 0; i < n; i++) {
+        homomorphism.push_back(-1);
+    }
+    std::vector<int> componentsPositions;
+    for (int i = 0; i < components.size(); i++) {
+        if (i == 0) {
+            componentsPositions.push_back(0);
+        }
+        else {
+            componentsPositions.push_back(componentsPositions[i - 1] + components[i - 1].size());
+        }
+        for (int j = 0; j < components[i].size(); j++) {
+            determineHomomrphizmForVertex(components[i].renamingList[j], componentsPositions[i] + j, homomorphism);
+        }
+    }
+    return componentsPositions;
+}
+Graph::Graph(const std::vector<Graph>& componentsList) {
+    std::vector<int> positionsHomomorhphism;
+    std::vector<int> componentsPositions = fillPositionsHomomorphism(positionsHomomorhphism, componentsList);
+    matrix.resize(positionsHomomorhphism.size());
+    for (auto& row : matrix)
+        row.resize(positionsHomomorhphism.size(), std::numeric_limits<double>::infinity());
+    for (int k = 0; k < componentsList.size(); k++) {
+        for (int i = 0; i < componentsList[k].size(); i++) {
+            for (int j = 0; j < componentsList[k].size(); j++) {
+                matrix[positionsHomomorhphism[componentsPositions[k] + i]][positionsHomomorhphism[componentsPositions[k] + j]] =
+                    componentsList[k].matrix[i][j];
+            }
+        }
+    }
+    for (int i = 0; i < positionsHomomorhphism.size(); i++)
+        renamingList.push_back(i);
 }
 
 std::vector<Graph> Graph::findOstForest() {
@@ -125,4 +179,7 @@ std::vector<Graph> Graph::findConnectComponents() {
         }
     }
     return ConnectionComponents;
+}
+int Graph::size() const{
+    return matrix.size();
 }

@@ -14,7 +14,9 @@ int main() {
 		comp.print();
 		std::cout<< std::endl<<"*******************************************" << std::endl;
 	}
-
+	compn.pop_back();
+	Graph fromComponents(compn);
+	fromComponents.print();
 	
 	return 0;
 }
