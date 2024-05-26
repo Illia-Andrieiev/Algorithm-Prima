@@ -14,7 +14,7 @@ class Graph
 	std::condition_variable cv;
 	std::vector<std::vector<double>> matrix; //adjacency matrix
 	std::vector<int> homomorphism; // homomorphism of vertex numbers
-	void setRenaimingList(const std::vector<int>& list);
+	void setHomomorphism(const std::vector<int>& list);
 	bool isHomomorphismContainsNomer(const std::vector<int>& homomorphism, int nomer) const;
 	std::vector<int> connectionsForVertexes(int nomer, std::vector<bool>& checked) const;
 	Graph findConnectionComponentForVertex(int nomer, std::vector<bool>& checked) const;
@@ -24,7 +24,7 @@ class Graph
 	void parallel_findConnectComponents(std::list<Graph>& ConnectionComponents, bool& isReady);
 	void findMinSpanningTreeThread(std::list<Graph>& ConnectionComponents, std::vector<Graph>& minSpanningForest, bool& isReady);
 public:
-	std::vector<int> getRenaimingList() const;
+	std::vector<int> getHomomorphism() const;
 	std::vector<std::vector<double>> getAdjacencyMatrix() const;
 	static Graph createRandomGraph(int n, double minWeight, double maxWeight, double edgesPercent);
 	static Graph createRandomGraph(int n, double minWeight, double maxWeight, unsigned seed, double edgesPercent);

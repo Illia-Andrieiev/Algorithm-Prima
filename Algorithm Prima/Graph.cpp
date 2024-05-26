@@ -258,63 +258,92 @@ std::vector<Graph> Graph::findMinSpanningForest() const {
     return minSpanningForest; ///< Return the minimum spanning forest.
 }
 
-void Graph::setRenaimingList(const std::vector<int>& list) {
+void Graph::setHomomorphism(const std::vector<int>& list) {
     homomorphism = list;
 }
-std::vector<int> Graph::getRenaimingList() const {
+/// Get graphs homomorphism
+std::vector<int> Graph::getHomomorphism() const {
     return homomorphism;
 }
+/// Find all vertexes, conected with 'nomer' vertex. in 'checked' vector set connected vertexes as true. 
 std::vector<int> Graph::connectionsForVertexes(int nomer, std::vector<bool>& checked) const {
     std::vector<int> connections;
-    std::list<int> queue;
+    std::list<int> queue; // queue for checking vertexes
     queue.push_back(nomer);
     while (queue.size() > 0) {
-        connections.push_back(queue.front());
+        // set connection with vertex
+        connections.push_back(queue.front()); 
         checked[queue.front()] = true;
         for (int i = 0; i < matrix.size(); i++) {
-            if (matrix[queue.front()][i] != std::numeric_limits<double>::infinity() && !checked[i]) {
+            if (matrix[queue.front()][i] != std::numeric_limits<double>::infinity() && !checked[i]) { // if connected, add to queue
                 queue.push_back(i);
                 checked[i] = true;
             }
         }
-        queue.pop_front();
+        queue.pop_front(); // remove checked vertex
     }
     return connections;
 }
+/// This function finds the connected component of a graph for a given vertex. Works with O(n^2) 
+/*!
+ * The function takes as input a vertex and a reference to a vector of booleans that keeps track of which vertices have been checked.
+ * It then finds all the vertices connected to the given vertex and creates a subgraph (connected component) with these vertices.
+ * The function returns this subgraph.
+ * @param nomer The vertex for which the connected component is to be found.
+ * @param checked A reference to a vector of booleans that keeps track of which vertices have been checked.
+ * @return Graph The connected component of the graph for the given vertex.
+ */
 Graph Graph::findConnectionComponentForVertex(int nomer, std::vector<bool>& checked) const {
-    Graph connectionComponent;
-    std::vector<int> connectionsForNomer = connectionsForVertexes(nomer, checked);
-    size_t n = connectionsForNomer.size();
-    connectionComponent.matrix.resize(n);
-    for (auto& row : connectionComponent.matrix) {
-        row.resize(n);
+    Graph connectionComponent; ///< The connected component of the graph for the given vertex.
+    std::vector<int> connectionsForNomer = connectionsForVertexes(nomer, checked); ///< The vertexes connected to the given vertex.
+    size_t n = connectionsForNomer.size(); ///< The number of vertexes connected to the given vertex.
+    connectionComponent.matrix.resize(n); ///< Resize the adjacency matrix of the connected component to the number of connected vertices.
+    for (auto& row : connectionComponent.matrix) { ///< For each row in the adjacency matrix...
+        row.resize(n); ///< ...resize it to the number of connected vertices.
     }
-    connectionComponent.homomorphism = connectionsForNomer;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            if (i == j) {
-                connectionComponent.matrix[i][j] = 0;
+    connectionComponent.homomorphism = connectionsForNomer; ///< The homomorphism of the connected component is the vertices connected to the given vertex.
+    for (int i = 0; i < n; i++) { 
+        for (int j = 0; j < n; j++) { 
+            if (i == j) { 
+                connectionComponent.matrix[i][j] = 0; ///< the weight of the edge connecting the vertex to itself is 0.
             }
-            else {
-                connectionComponent.matrix[i][j] = matrix[connectionsForNomer[i]][connectionsForNomer[j]];
+            else { 
+                connectionComponent.matrix[i][j] = matrix[connectionsForNomer[i]][connectionsForNomer[j]]; ///< the weight of the edge connecting the two vertices is the same as in the original graph.
             }
         }
     }
-    return connectionComponent;
+    return connectionComponent; ///< Return the connected component.
 }
+///This function finds all the connected components of a graph. Works with O(n^2)
+/*!
+ * The function iterates over all the vertices of the graph. For each vertex, if it has not been checked (i.e., it is not part of a previously found connected component),
+ * the function finds the connected component for that vertex and adds it to the list of connected components.
+ *
+ * @return std::vector<Graph> - A vector of Graph objects, where each Graph object represents a connected component of the graph.
+ */
 std::vector<Graph> Graph::findConnectComponents() const {
-    std::vector<Graph> ConnectionComponents;
-    std::vector<bool> checkedVertexes(matrix.size());
-    for (int i = 0; i < matrix.size(); i++) {
+    std::vector<Graph> ConnectionComponents; ///< A vector of Graph objects to store the connected components of the graph.
+    std::vector<bool> checkedVertexes(matrix.size()); ///< A vector of booleans to keep track of which vertices have been checked.
+    for (int i = 0; i < matrix.size(); i++) { ///< Initialize all vertices as unchecked.
         checkedVertexes[i] = false;
     }
-    for (int i = 0; i < matrix.size(); i++) { // Checking all vertex
-        if (!checkedVertexes[i]) { // If not connected with previous, find new component
-            ConnectionComponents.push_back(findConnectionComponentForVertex(i, checkedVertexes));
+    for (int i = 0; i < matrix.size(); i++) {
+        if (!checkedVertexes[i]) { ///< if the vertex has not been checked
+            ConnectionComponents.push_back(findConnectionComponentForVertex(i, checkedVertexes)); ///< ...find the connected component for that vertex and add it to the list of connected components.
         }
     }
-    return ConnectionComponents;
+    return ConnectionComponents; ///< Return the list of connected components.
 }
+/// This function finds the minimum spanning tree of each connected component in a graph using multiple threads.
+/*!
+ * The function waits until there is a connected component in the queue or all connected components have been found.
+ * If there is a connected component in the queue, it removes it from the queue, finds its minimum spanning tree, and adds it to the minimum spanning forest.
+ * The function continues this process until all connected components have been found and the queue is empty.
+ *
+ * @param componentsQueue A reference to a queue of connected components.
+ * @param minSpanningForest A reference to a vector of Graph objects to store the minimum spanning trees of the connected components.
+ * @param isReady A reference to a boolean that indicates whether all connected components have been found.
+ */
 void Graph::findMinSpanningTreeThread(std::list<Graph>& componentsQueue, std::vector<Graph>& minSpanningForest, bool& isReady) {
     while (true) {
 
@@ -330,6 +359,15 @@ void Graph::findMinSpanningTreeThread(std::list<Graph>& componentsQueue, std::ve
         }
     }
 }
+/// This function finds all the connected components of a graph using multiple threads.
+/*!
+ * The function iterates over all the vertices of the graph. For each vertex, if it has not been checked (i.e., it is not part of a previously found connected component),
+ * the function finds the connected component for that vertex and adds it to the queue of connected components.
+ * Once all connected components have been found, it notifies all waiting threads.
+ *
+ * @param ConnectionComponents A reference to a queue of connected components.
+ * @param isReady A reference to a boolean that indicates whether all connected components have been found.
+ */
 void Graph::parallel_findConnectComponents(std::list<Graph>& ConnectionComponents, bool& isReady) {
     isReady = false;
     std::vector<bool> checkedVertexes(matrix.size(), false);
@@ -346,6 +384,13 @@ void Graph::parallel_findConnectComponents(std::list<Graph>& ConnectionComponent
     isReady = true;
     cv.notify_all(); // Notify all waiting threads that isReady is now true
 }
+/// This function finds the minimum spanning forest of a graph using multiple threads.
+/*!
+ * The function creates a task group and runs two tasks in parallel: one to find all the connected components of the graph, and the other to find the minimum spanning tree of each connected component.
+ * Once all tasks have completed, the function returns the minimum spanning forest.
+ *
+ * @return std::vector<Graph> - A vector of Graph objects, where each Graph object represents a minimum spanning tree of a connected component of the graph.
+ */
 std::vector<Graph> Graph::parallel_findMinSpanningForest() {
     std::list<Graph> componentsQueue; 
     std::vector<Graph> minSpanningForest;
@@ -361,19 +406,34 @@ std::vector<Graph> Graph::parallel_findMinSpanningForest() {
     g.wait();
     return minSpanningForest;
 }
+/// Return amount of graph`s vertexes
 int Graph::size() const{
     return (int)matrix.size();
 }
+/// This function calculates the total weight of a graph.
+/*!
+ * The function iterates over all the edges in the adjacency matrix of the graph. If the weight of an edge is not infinity (i.e., the edge exists),
+ * it adds the weight of the edge to the total weight of the graph. The function returns the total weight of the graph.
+ *
+ * @return double - The total weight of the graph.
+ */
 double Graph::findGraphWeight() const {
-    double weight = 0;
-    for (int i = 0; i < matrix.size(); i++) {
-        for (int j = 0; j < matrix.size(); j++) {
-            if (matrix[i][j] != std::numeric_limits<double>::infinity())
-                weight += matrix[i][j];
+    double weight = 0; ///< The total weight of the graph.
+    for (int i = 0; i < matrix.size(); i++) { ///< For each vertex in the graph...
+        for (int j = 0; j < matrix.size(); j++) { 
+            if (matrix[i][j] != std::numeric_limits<double>::infinity()) ///< if the edge exists
+                weight += matrix[i][j]; ///< åadd the weight of the edge to the total weight of the graph.
         }
     }
-    return weight;  
+    return weight;
 }
+///  Add edge to graph
+/*!
+* if vertexes nomers out of range, method do not add edge. if vertex1 == vertex2 -> weight = 0. Also add edge for v2 -> v1.
+* @param vertex1 nomer of first vertex in edge
+* @param vertex2 nomer of second vertex in edge
+* @param weight weight of edge
+*/
 void Graph::addEdge(int vertex1, int vertex2, double weight) {
     if (vertex1 < 0 || vertex2 < 0 || vertex1 >= matrix.size()||vertex2 >=  matrix.size())
         return;
@@ -382,8 +442,14 @@ void Graph::addEdge(int vertex1, int vertex2, double weight) {
     matrix[vertex2][vertex1] = weight;
     matrix[vertex1][vertex2] = weight;
 }
+///  Remove edge from graph
+/*!
+* if vertexes nomers out of range, method do not remove edge. if vertex1 == vertex2 -> weight = 0. Also add edge for v2 -> v1.
+* @param vertex1 nomer of first vertex in edge
+* @param vertex2 nomer of second vertex in edge
+*/
 void Graph::removeEdge(int vertex1, int vertex2) {
-    if (vertex1 < 0 || vertex2 < 0 || vertex1 >= matrix.size() || vertex2 >= matrix.size())
+    if (vertex1 < 0 || vertex2 < 0 || vertex1 >= matrix.size() || vertex2 >= matrix.size() || vertex1 == vertex2)
         return;
     matrix[vertex2][vertex1] = std::numeric_limits<double>::infinity();
     matrix[vertex1][vertex2] = std::numeric_limits<double>::infinity();
@@ -394,11 +460,33 @@ std::vector<std::vector<double>> Graph::getAdjacencyMatrix() const {
 /*
     Benchmark
 */
+
+/// This function benchmarks the performance of the default and parallel implementations of the minimum spanning forest algorithm on the same graph.
+/*!
+ * The function creates a random graph and measures the time taken by the default and parallel implementations of the minimum spanning forest algorithm to process the graph.
+ * The function repeats this process a specified number of times and returns the total time taken by each implementation.
+ *
+ * @param n The number of vertices in the graph.
+ * @param edgesPercent The percentage of edges in the graph.
+ * @param amountOfMeasurements The number of times the benchmarking process is repeated.
+ * @return std::pair<std::chrono::duration<double>, std::chrono::duration<double>> - A pair of durations, where the first duration is the total time taken by the default implementation and the second duration is the total time taken by the parallel implementation.
+ */
 std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::sameGraphBenchMark(int n,
     double edgesPercent, unsigned amountOfMeasurements) {
     std::random_device rd;
     return sameGraphBenchMark(n, edgesPercent, amountOfMeasurements, rd());
 }
+/// This function benchmarks the performance of the default and parallel implementations of the minimum spanning forest algorithm on the same graph with a specified seed for the random number generator.
+/*!
+ * The function creates a random graph with a specified seed for the random number generator and measures the time taken by the default and parallel implementations of the minimum spanning forest algorithm to process the graph.
+ * The function repeats this process a specified number of times and returns the total time taken by each implementation.
+ *
+ * @param n The number of vertices in the graph.
+ * @param edgesPercent The percentage of edges in the graph.
+ * @param amountOfMeasurements The number of times the benchmarking process is repeated.
+ * @param seed The seed for the random number generator.
+ * @return std::pair<std::chrono::duration<double>, std::chrono::duration<double>> - A pair of durations, where the first duration is the total time taken by the default implementation and the second duration is the total time taken by the parallel implementation.
+ */
 std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::sameGraphBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements, unsigned seed) {
     int printEvery = 50;
     Graph graph = Graph::createRandomGraph(n, -1000, 1000,seed ,edgesPercent);
@@ -453,6 +541,16 @@ std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::s
     log.close();
     return std::pair<std::chrono::duration<double>, std::chrono::duration<double>>(resTimeDefault, resTimeParallel);
 }
+/// This function benchmarks the performance of the default and parallel implementations of the minimum spanning forest algorithm on different graphs.
+/*!
+ * The function creates a random graph and measures the time taken by the default and parallel implementations of the minimum spanning forest algorithm to process the graph.
+ * The function repeats this process with a new random graph a specified number of times and returns the total time taken by each implementation.
+ *
+ * @param n The number of vertices in the graph.
+ * @param edgesPercent The percentage of edges in the graph.
+ * @param amountOfMeasurements The number of times the benchmarking process is repeated.
+ * @return std::pair<std::chrono::duration<double>, std::chrono::duration<double>> - A pair of durations, where the first duration is the total time taken by the default implementation and the second duration is the total time taken by the parallel implementation.
+ */
 std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::differentGraphsBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements) {
     int printEvery = 50;
     std::chrono::duration<double> resTimeDefault(0), resTimeParallel(0), resTimeParallel_W(0);
@@ -511,7 +609,17 @@ std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::d
     log.close();
     return std::pair<std::chrono::duration<double>, std::chrono::duration<double>>(resTimeDefault, resTimeParallel);
 }
-/********************/
+
+
+/// This function finds all the connected components of a graph.
+/*!
+ * The function iterates over all the vertices of the graph. For each vertex, if it has not been checked (i.e., it is not part of a previously found connected component),
+ * the function finds the connected component for that vertex and adds it to the list of connected components.
+ * Once all connected components have been found, it notifies all waiting threads.
+ *
+ * \param[out] ConnectionComponents A reference to a vector of Graph objects to store the connected components of the graph.
+ * \param[in,out] isReady A reference to a boolean that indicates whether all connected components have been found.
+ */
 void Graph::p_c(std::vector<Graph>& ConnectionComponents, bool& isReady) {
     isReady = false;
     std::vector<bool> checkedVertexes(matrix.size());
@@ -528,12 +636,19 @@ void Graph::p_c(std::vector<Graph>& ConnectionComponents, bool& isReady) {
     isReady = true;
     cv.notify_all();
 }
-
+/// This function finds the minimum spanning forest of a graph using multiple threads.
+/*!
+ * The function creates a separate thread to find all the connected components of the graph. It then waits until a connected component is found,
+ * finds its minimum spanning tree, and adds it to the minimum spanning forest.
+ * The function continues this process until all connected components have been found.
+ *
+ * @return std::vector<Graph> - A vector of Graph objects, where each Graph object represents a minimum spanning tree of a connected component of the graph.
+ */
 std::vector<Graph> Graph::p_f() {
     std::vector<Graph> connectionComponents;
     std::vector<Graph> minSpanningForest;
     bool isReady = false;
-    std::thread t1(&Graph::p_c, this, std::ref(connectionComponents), std::ref(isReady));
+    std::thread t1(&Graph::p_c, this, std::ref(connectionComponents), std::ref(isReady)); // find connection components
     std::unique_lock<std::mutex> lock(mtx);
     while (!isReady) {
         cv.wait(lock);
