@@ -23,13 +23,15 @@ class Graph
 	Graph findMinSpanningTree(const Graph& graph) const;
 	void parallel_findConnectComponents(std::list<Graph>& ConnectionComponents, bool& isReady);
 	void findMinSpanningTreeThread(std::list<Graph>& ConnectionComponents, std::vector<Graph>& minSpanningForest, bool& isReady);
+	//**************************************
 public:
 	std::vector<int> getHomomorphism() const;
 	std::vector<std::vector<double>> getAdjacencyMatrix() const;
 	static Graph createRandomGraph(int n, double minWeight, double maxWeight, double edgesPercent);
 	static Graph createRandomGraph(int n, double minWeight, double maxWeight, unsigned seed, double edgesPercent);
+	bool operator ==(const Graph& another);
 	Graph();
-	Graph(int n);
+	Graph(const std::vector<std::vector<double>>& matrix);
 	Graph(const Graph& another);
 	Graph(int n, double minWeight, double maxWeight, double edgesPercent=100);
 	Graph(const std::vector<Graph>& componentsList);
@@ -47,6 +49,8 @@ public:
 	static std::pair<std::chrono::duration<double>, std::chrono::duration<double>> sameGraphBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements);
 	static std::pair<std::chrono::duration<double>, std::chrono::duration<double>> sameGraphBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements, unsigned seed);
 	static std::pair<std::chrono::duration<double>, std::chrono::duration<double>> differentGraphsBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements) ;
+	void test();
+
 };
 /// Struct that represent graph edge. 
 struct Edge {

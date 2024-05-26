@@ -5,6 +5,7 @@
 #include <set>
 #include <thread>
 #include<fstream>
+#include"libs/ut.hpp"
 ///Constructor
 Edge::Edge(int v1, int v2, double weight) {
     if (v1 < 0)
@@ -22,10 +23,27 @@ Graph::Graph(const Graph& another) {
     this->matrix = another.matrix;
     this->homomorphism = another.homomorphism;
 }
+/// Constructor from matrix
+Graph::Graph(const std::vector<std::vector<double>>& matrix) {
+    int n = (int)matrix.size();
+    this->matrix.resize(n);
+    for (auto& row : this->matrix)
+        row.resize(n);
+    for (int i = 0; i < n; i++) {
+        this->matrix[i][i] = 0;
+        for (int j = i + 1; j < n; j++) {
+            this->matrix[i][j] = matrix[i][j];
+            this->matrix[j][i] = matrix[i][j];
+        }
+    }
+}
 Graph& Graph::operator =(const Graph& another) {
     matrix = another.matrix;
     homomorphism = another.homomorphism;
     return *this;
+}
+bool Graph::operator ==(const Graph& another) {
+    return matrix == another.matrix && homomorphism == another.homomorphism;
 }
 /// Create random graph with random generation seed
 Graph Graph::createRandomGraph(int n, double minWeight, double maxWeight, double edgesPercent) {
@@ -420,7 +438,7 @@ int Graph::size() const{
 double Graph::findGraphWeight() const {
     double weight = 0; ///< The total weight of the graph.
     for (int i = 0; i < matrix.size(); i++) { ///< For each vertex in the graph...
-        for (int j = 0; j < matrix.size(); j++) { 
+        for (int j = i+1; j < matrix.size(); j++) { 
             if (matrix[i][j] != std::numeric_limits<double>::infinity()) ///< if the edge exists
                 weight += matrix[i][j]; ///< åadd the weight of the edge to the total weight of the graph.
         }
@@ -659,4 +677,88 @@ std::vector<Graph> Graph::p_f() {
     }
     t1.join();
     return minSpanningForest;
+}
+/*
+                            Tests
+*/
+
+void Graph::test() {
+    using namespace boost::ut;
+    suite<"Find_Connect_Components_Test"> components_tests = [] {
+        "test_findConnectComponents"_test = [] {
+            // Arrange
+            Graph g(5, -5, 5, 0);
+            // Assuming you have a method to add edges to the graph
+            g.addEdge(0, 1, 3);
+            g.addEdge(1, 2, 5);
+            g.addEdge(3, 4, 3);
+
+            // Act
+            auto components = g.findConnectComponents();
+
+            // Assert
+            expect(components.size() == 2 && components[0].size() == 3 && components[1].size() == 2) <<fatal<< "Number of connected components should be 2";          
+            std::vector<int> homomorphism1 = components[0].getHomomorphism();
+            std::vector<int> homomorphism2 = components[1].getHomomorphism();
+            expect(homomorphism1[0] == 0 && homomorphism1[1] == 1 && homomorphism1[2] == 2) << "Homomorphism do not correct!";
+            expect(homomorphism2[0] == 3 && homomorphism2[1] == 4) << "Homomorphism do not correct!";
+            };
+        "test_findConnectComponents_homomorphismAndWeight"_test = [] {
+            // Arrange
+            Graph g(8, -5, 5, 0);
+            // Assuming you have a method to add edges to the graph
+            g.addEdge(0, 5, 3);
+            g.addEdge(1, 2, 1.5);
+            g.addEdge(1, 6, -3);
+            g.addEdge(1, 7, -2);
+            g.addEdge(3, 4, 5);
+            // Act
+            auto components = g.findConnectComponents();
+
+            // Assert
+            expect(components.size() == 3 && components[0].size() == 2 && components[1].size() == 4 && components[2].size() ==2) << fatal << "Number of connected components should be 3";
+        
+            std::vector<int> homomorphism1 = components[0].getHomomorphism();
+            std::vector<int> homomorphism2 = components[1].getHomomorphism();
+            std::vector<int> homomorphism3 = components[2].getHomomorphism();
+            expect(homomorphism1[0] == 0 && homomorphism1[1] == 5) << "Homomorphism do not correct!";
+            expect(homomorphism2[0] == 1 && homomorphism2[1] == 2 && homomorphism2[2] == 6 && homomorphism2[3] == 7) << "Homomorphism do not correct!";
+            expect(homomorphism3[0] == 3 && homomorphism3[1] == 4) << "Homomorphism do not correct!";
+            expect(components[0].findGraphWeight() == 3);
+            expect(components[1].findGraphWeight() == -3.5);
+            expect(components[2].findGraphWeight() == 5);
+            };
+        "test_findConnectComponents_single_vertex"_test = [] {
+            // Arrange
+            Graph g(1,-5,5,0);
+            // Act
+            auto components = g.findConnectComponents();
+
+            // Assert
+            expect(components.size() == 1 && components[0].size()==1) << "Number of connected components should be 1 for a single vertex graph";
+            };
+
+        "test_findConnectComponents_disconnected_vertexes"_test = [] {
+            // Arrange
+            Graph g(2,-5,5,0);
+
+            // Act
+            auto components = g.findConnectComponents();
+
+            // Assert
+            expect(components.size() == 2 && components[0].size() == 1 && components[1].size() == 1) << "Number of connected components should be 2 for a graph with two disconnected vertexes with size 1";
+            };
+
+        "test_findConnectComponents_connected_vertexes"_test = [] {
+            // Arrange
+            Graph g(2,-5,5,0);
+            g.addEdge(0, 1,3);
+          
+            // Act
+            auto components = g.findConnectComponents();
+
+            // Assert
+            expect(components.size() == 1 && components[0].size() == 2) << "Number of connected components should be 1 for a graph with two connected vertices";
+            };
+        };
 }
