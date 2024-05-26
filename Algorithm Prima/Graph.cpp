@@ -42,18 +42,18 @@ Graph Graph::createRandomGraph(int n, double minWeight, double maxWeight, unsign
     std::uniform_real_distribution<> dis(minWeight, maxWeight);
     Graph rdGraph;
     rdGraph.matrix.resize(n);
-    for (auto& row : rdGraph.matrix)
+    for (auto& row : rdGraph.matrix) // init matrix as infinity
         row.resize(n, std::numeric_limits<double>::infinity());
-    int edgesToCreate = static_cast<int>((n * (n - 1) / 2.0) * (edgesPercent / 100.0));
+    int edgesToCreate = static_cast<int>((n * (n - 1) / 2.0) * (edgesPercent / 100.0)); // how many edges create
     std::vector<std::pair<int, int>> allEdges;
     for (int i = 0; i < n; i++) {
-        rdGraph.matrix[i][i] = 0;
+        rdGraph.matrix[i][i] = 0; // elems on diagonal = 0
         rdGraph.homomorphism.push_back(i);
         for (int j = i + 1; j < n; j++) {
-            allEdges.push_back({ i, j });
+            allEdges.push_back({ i, j }); 
         }
     }
-    std::shuffle(allEdges.begin(), allEdges.end(), gen);
+    std::shuffle(allEdges.begin(), allEdges.end(), gen); // shuffle edges
     for (int i = 0; i < edgesToCreate; i++) {
         double randNum = dis(gen);
         int u = allEdges[i].first, v = allEdges[i].second;
@@ -62,6 +62,7 @@ Graph Graph::createRandomGraph(int n, double minWeight, double maxWeight, unsign
     }
     return rdGraph;
 }
+/// Print adjacency matrix 
 void Graph::printMatrix() const {
     for (int i = 0; i < matrix.size();i++) {
         for (int j = 0; j < matrix.size(); j++) {
@@ -74,6 +75,7 @@ void Graph::printMatrix() const {
         std::cout << i<<"->"<< homomorphism[i]<<"; ";
     }
 }
+/// Print all graph edges 
 void Graph::printEdges() const {
     for (int i = 0; i < matrix.size(); i++) {
         for (int j = i+1; j < matrix.size(); j++) {
@@ -88,11 +90,40 @@ void Graph::printEdges() const {
     }
 }
 Graph::Graph() {}
+/// Constructor
+/*!
+* \param[in] n number of vertexes in the graph
+* \param[in] minWeight minimum possible edge weight.
+* \param[in] maxWeight maximum possible edge weight.
+* \param[in] edgesPercent percent of all edges that will be created
+*/
 Graph::Graph(int n, double minWeight, double maxWeight,double edgesPercent) {
     Graph g = Graph::createRandomGraph(n, minWeight, maxWeight, edgesPercent);
     this->matrix = g.matrix;
     this->homomorphism = g.homomorphism;
 }
+/// Constructor
+/*!
+* \param[in] componentsList list of components, that will merge into one
+*/
+Graph::Graph(const std::vector<Graph>& componentsList) {
+    std::vector<int> positionsHomomorhphism;
+    std::vector<int> componentsPositions = fillPositionsHomomorphism(positionsHomomorhphism, componentsList);
+    matrix.resize(positionsHomomorhphism.size());
+    for (auto& row : matrix)
+        row.resize(positionsHomomorhphism.size(), std::numeric_limits<double>::infinity());
+    for (int k = 0; k < componentsList.size(); k++) {
+        for (int i = 0; i < componentsList[k].size(); i++) {
+            for (int j = 0; j < componentsList[k].size(); j++) {
+                matrix[positionsHomomorhphism[componentsPositions[k] + i]][positionsHomomorhphism[componentsPositions[k] + j]] =
+                    componentsList[k].matrix[i][j];
+            }
+        }
+    }
+    for (int i = 0; i < positionsHomomorhphism.size(); i++)
+        homomorphism.push_back(i);
+}
+/// Is homomorphism contains nomer
 bool Graph::isHomomorphismContainsNomer(const std::vector<int>& homomorphism, int nomer) const{
     for (int i = 0; i < homomorphism.size(); i++) {
         if (homomorphism[i] == nomer)
@@ -100,6 +131,7 @@ bool Graph::isHomomorphismContainsNomer(const std::vector<int>& homomorphism, in
     }
     return false;
 }
+/// Determine homomorphism, that will be set for position vertex. curHomomorphism is default homomorphism 
 void Graph::determineHomomrphizmForVertex(int curHomomorphism, int position, std::vector<int>& homomorphism) const{
     if (curHomomorphism >= homomorphism.size())
         curHomomorphism = 0;
@@ -110,6 +142,7 @@ void Graph::determineHomomrphizmForVertex(int curHomomorphism, int position, std
     }
     homomorphism[position] = curHomomorphism;
 }
+/// determine general homomorphism for all components. Return vectors of positions components in homomorphism
 std::vector<int> Graph::fillPositionsHomomorphism(std::vector<int>& homomorphism, const std::vector<Graph>& components) const{
     int n = 0;
     for (auto& component : components) {
@@ -133,32 +166,17 @@ std::vector<int> Graph::fillPositionsHomomorphism(std::vector<int>& homomorphism
     }
     return componentsPositions;
 }
-Graph::Graph(const std::vector<Graph>& componentsList) {
-    std::vector<int> positionsHomomorhphism;
-    std::vector<int> componentsPositions = fillPositionsHomomorphism(positionsHomomorhphism, componentsList);
-    matrix.resize(positionsHomomorhphism.size());
-    for (auto& row : matrix)
-        row.resize(positionsHomomorhphism.size(), std::numeric_limits<double>::infinity());
-    for (int k = 0; k < componentsList.size(); k++) {
-        for (int i = 0; i < componentsList[k].size(); i++) {
-            for (int j = 0; j < componentsList[k].size(); j++) {
-                matrix[positionsHomomorhphism[componentsPositions[k] + i]][positionsHomomorhphism[componentsPositions[k] + j]] =
-                    componentsList[k].matrix[i][j];
-            }
-        }
-    }
-    for (int i = 0; i < positionsHomomorhphism.size(); i++)
-        homomorphism.push_back(i);
-}
-/// Find minimum spanning tree for graph, using alghorithm Prima
+
+/// Find minimum spanning tree for graph, using alghorithm Prima. Works with O(n^2). 
 Graph Graph::findMinSpanningTree(const Graph& graph) const{
     int n = graph.size();
-    //init tree
+    //init spanning tree
     Graph spanningTree;
     spanningTree.matrix.resize(n);
     for (auto& row : spanningTree.matrix)
         row.resize(n, std::numeric_limits<double>::infinity());
     spanningTree.homomorphism = graph.homomorphism;
+    //                 Old algorithm 
     //std::set<int> visited, unvisited; //visited unvisited vertexes
     //std::vector<Edge> treeEdges; // tree edges
     ////visit first vertex
@@ -200,23 +218,24 @@ Graph Graph::findMinSpanningTree(const Graph& graph) const{
     //    spanningTree.matrix[edge.v1][edge.v2] = edge.weight;
     //    spanningTree.matrix[edge.v2][edge.v1] = edge.weight;
     //}
-    std::vector<bool> used(n);
-    std::vector<double> minE(n, std::numeric_limits<double>::infinity()), selE(n, -1);
-    minE[0] = 0;
-    for (int i = 0; i < n; ++i) {
-        spanningTree.matrix[i][i] = 0;
-        int v = -1;
-        for (int j = 0; j < n; ++j)
+    std::vector<bool> used(n); // vertexes that have been included in the minimum spanning tree.
+    std::vector<double> minE(n, std::numeric_limits<double>::infinity()), selE(n, -1);  // minE[i] stores the weight of the edge connecting vertex i to the minimum spanning tree. selE[i] stores the selected edge that connects vertex i to the minimum spanning tree.
+    minE[0] = 0; // The weight of the edge connecting the first vertex to the minimum spanning tree is set to 0.
+
+    for (int i = 0; i < n; ++i) { 
+        spanningTree.matrix[i][i] = 0; // The weight of the edge connecting a vertex to itself is always 0.
+        int v = -1; // v will hold the index of the vertex to be added to the minimum spanning tree.
+        for (int j = 0; j < n; ++j) // This loop finds the vertex with the smallest edge not yet included in the minimum spanning tree.
             if (!used[j] && (v == -1 || minE[j] < minE[v]))
                 v = j;
-        if (minE[v] == std::numeric_limits<double>::infinity()) {
+        if (minE[v] == std::numeric_limits<double>::infinity()) { // If the smallest edge has infinite weight, then the graph is not connected, and the program exits.
             exit(0);
         }
-        used[v] = true;
-        if (selE[v] != -1) {
-            spanningTree.addEdge(v, selE[v],graph.matrix[v][selE[v]]);
+        used[v] = true; // The vertex v is marked as used.
+        if (selE[v] != -1) { // If there is an edge connecting vertex v to the minimum spanning tree, it is added to the spanning tree.
+            spanningTree.addEdge(v, selE[v], graph.matrix[v][selE[v]]);
         }
-        for (int to = 0; to < n; ++to)
+        for (int to = 0; to < n; ++to) // This loop updates the weights of the edges connecting the vertices to the minimum spanning tree.
             if (graph.matrix[v][to] < minE[to]) {
                 minE[to] = graph.matrix[v][to];
                 selE[to] = v;
@@ -224,13 +243,21 @@ Graph Graph::findMinSpanningTree(const Graph& graph) const{
     }
     return spanningTree;
 }
+/// This function finds the minimum spanning forest of a graph.
+/*!
+ * The function first finds the connected components of the graph. For each connected component, it finds the minimum spanning tree.
+ * All these minimum spanning trees together form the minimum spanning forest of the graph.
+ *
+ * @return std::vector<Graph> - A vector of Graph objects, where each Graph object represents a minimum spanning tree of a connected component of the graph.
+ */
 std::vector<Graph> Graph::findMinSpanningForest() const {
-    std::vector<Graph> connectionComponents = findConnectComponents();
-    std::vector<Graph> minSpanningForest;
-    for (const auto& component : connectionComponents)
-        minSpanningForest.push_back(findMinSpanningTree(component));
-    return minSpanningForest;
+    std::vector<Graph> connectionComponents = findConnectComponents(); ///< A vector of Graph objects, where each Graph object represents a connected component of the graph.
+    std::vector<Graph> minSpanningForest; ///< A vector of Graph objects to store the minimum spanning trees of the connected components.
+    for (const auto& component : connectionComponents) ///< For each connected component...
+        minSpanningForest.push_back(findMinSpanningTree(component)); ///< ...find its minimum spanning tree and add it to the minimum spanning forest.
+    return minSpanningForest; ///< Return the minimum spanning forest.
 }
+
 void Graph::setRenaimingList(const std::vector<int>& list) {
     homomorphism = list;
 }
