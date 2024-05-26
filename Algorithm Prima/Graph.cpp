@@ -1,11 +1,11 @@
 #include "Graph.h"
-#include<random>
+#include<tbb/tbb.h>
 #include <limits>
 #include<iostream>
-#include<list>
 #include <set>
 #include <thread>
 #include<fstream>
+///Constructor
 Edge::Edge(int v1, int v2, double weight) {
     if (v1 < 0)
         v1 = 0;
@@ -22,9 +22,14 @@ Graph::Graph(const Graph& another) {
     this->matrix = another.matrix;
     this->homomorphism = another.homomorphism;
 }
+Graph& Graph::operator =(const Graph& another) {
+    matrix = another.matrix;
+    homomorphism = another.homomorphism;
+    return *this;
+}
 /// Create random graph with random generation seed
 Graph Graph::createRandomGraph(int n, double minWeight, double maxWeight, double edgesPercent) {
-    std::random_device rd;  
+    std::random_device rd;
     return createRandomGraph(n, minWeight, maxWeight, rd(), edgesPercent);
 }
 /// Create graph whith generation seed
@@ -283,36 +288,50 @@ std::vector<Graph> Graph::findConnectComponents() const {
     }
     return ConnectionComponents;
 }
-void Graph::parallel_findConnectComponents(std::vector<Graph>& ConnectionComponents, bool& isReady)  {
-    isReady = false;
-    std::vector<bool> checkedVertexes(matrix.size());
-    for (int i = 0; i < matrix.size(); i++) {
-        checkedVertexes[i] = false;
+void Graph::findMinSpanningTreeThread(std::list<Graph>& componentsQueue, std::vector<Graph>& minSpanningForest, bool& isReady) {
+    while (true) {
+
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [&] { return !componentsQueue.empty() || isReady; });
+        if (!componentsQueue.empty()) {
+            Graph component = componentsQueue.front();
+            componentsQueue.pop_front();
+            minSpanningForest.push_back(findMinSpanningTree(component));
+        }
+        if (isReady && componentsQueue.empty()) {
+            return;
+        }
     }
+}
+void Graph::parallel_findConnectComponents(std::list<Graph>& ConnectionComponents, bool& isReady) {
+    isReady = false;
+    std::vector<bool> checkedVertexes(matrix.size(), false);
     for (int i = 0; i < matrix.size(); i++) { // Checking all vertex
         if (!checkedVertexes[i]) { // If not connected with previous, find new component
-            std::lock_guard<std::mutex> lock(this->mtx);
-            ConnectionComponents.push_back(findConnectionComponentForVertex(i, checkedVertexes));
+            Graph component = findConnectionComponentForVertex(i, checkedVertexes);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                ConnectionComponents.push_back(component);
+            }
             cv.notify_one();
         }
     }
     isReady = true;
+    cv.notify_all(); // Notify all waiting threads that isReady is now true
 }
-
 std::vector<Graph> Graph::parallel_findMinSpanningForest() {
-    std::vector<Graph> connectionComponents;
+    std::list<Graph> componentsQueue; 
     std::vector<Graph> minSpanningForest;
     bool isReady = false;
-    std::thread t1(&Graph::parallel_findConnectComponents, this, std::ref(connectionComponents), std::ref(isReady));
-    std::unique_lock<std::mutex> lock(mtx);
-    while (!isReady) {
-        cv.wait(lock);
-        while (!connectionComponents.empty()) {
-            minSpanningForest.push_back(findMinSpanningTree(connectionComponents.back()));
-            connectionComponents.pop_back();
-        }
+    tbb::task_group g;
+
+    g.run([&] { this->parallel_findConnectComponents(componentsQueue,isReady); });
+    int threadsAmount = 2;
+    for (int i = 0; i < threadsAmount; ++i) {
+        g.run([&]() {findMinSpanningTreeThread(componentsQueue,minSpanningForest,isReady); });
     }
-    t1.join();
+
+    g.wait();
     return minSpanningForest;
 }
 int Graph::size() const{
@@ -350,9 +369,13 @@ std::vector<std::vector<double>> Graph::getAdjacencyMatrix() const {
 */
 std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::sameGraphBenchMark(int n,
     double edgesPercent, unsigned amountOfMeasurements) {
+    std::random_device rd;
+    return sameGraphBenchMark(n, edgesPercent, amountOfMeasurements, rd());
+}
+std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::sameGraphBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements, unsigned seed) {
     int printEvery = 50;
-     Graph graph(n, -1000, 1000, edgesPercent);
-     int amount = amountOfMeasurements;
+    Graph graph = Graph::createRandomGraph(n, -1000, 1000,seed ,edgesPercent);
+    int amount = amountOfMeasurements;
     // start counting
     auto startDefault = std::chrono::high_resolution_clock::now();
     while (amount > 0) {
@@ -370,24 +393,128 @@ std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::s
     auto startParallel = std::chrono::high_resolution_clock::now();
     while (amount > 0) {
         amount--;
-        if(amount%printEvery ==0)
-           std::cout << "parallel " << amount << std::endl;
+        if (amount % printEvery == 0)
+            std::cout << "parallel " << amount << std::endl;
         graph.parallel_findMinSpanningForest();
     }
     // stop counting
     auto endParallel = std::chrono::high_resolution_clock::now();
     // find time
     std::chrono::duration<double> resTimeParallel = endParallel - startParallel;
+    amount = amountOfMeasurements;
+    // start counting
+    auto startParallel_W = std::chrono::high_resolution_clock::now();
+    while (amount > 0) {
+        amount--;
+        if (amount % printEvery == 0)
+            std::cout << "parallel_without_Pool " << amount << std::endl;
+        graph.p_f();
+    }
+    // stop counting
+    auto endParallel_W = std::chrono::high_resolution_clock::now();
+    // find time
+    std::chrono::duration<double> resTimeParallel_W = endParallel_W - startParallel_W;
     // log
-    std::cout<<std::endl << "Graph vertexes: " << n << " edges percent: " << edgesPercent << " amount of measurements: " << amountOfMeasurements <<
-        " default algorithm time: " << resTimeDefault.count() << " s" << " parallel algorithm time: " << resTimeParallel.count() << " s" << std::endl;
+    std::cout << std::endl << "Graph vertexes: " << n << " edges percent: " << edgesPercent << " amount of measurements: " << amountOfMeasurements <<
+        " default algorithm time: " << resTimeDefault.count() << " s" << " parallel algorithm time: " << resTimeParallel.count() << " s"
+        << " parallel_without_pool algorithm time: " << resTimeParallel_W.count() << " s" << std::endl;
     std::fstream log;
     log.open("log_benchmark.txt", std::ios::app | std::ios::in | std::ios::out);
     log << "Graph vertexes: " << n << " edges percent: " << edgesPercent << " amount of measurements: " << amountOfMeasurements <<
-        " default algorithm time: " << resTimeDefault.count()<<" s" << " parallel algorithm time: " << resTimeParallel.count() << " s" << std::endl;
+        " default algorithm time: " << resTimeDefault.count() << " s" << " parallel algorithm time: " << resTimeParallel.count() << " s"
+        << " parallel_without_pool algorithm time: " << resTimeParallel_W.count() << " s" << std::endl;
     log.close();
     return std::pair<std::chrono::duration<double>, std::chrono::duration<double>>(resTimeDefault, resTimeParallel);
 }
-void Graph::differentGraphsBenchMark(int n, double minWeight, double maxWeight, double edgesPercent) {
+std::pair<std::chrono::duration<double>, std::chrono::duration<double>> Graph::differentGraphsBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements) {
+    int printEvery = 50;
+    std::chrono::duration<double> resTimeDefault(0), resTimeParallel(0), resTimeParallel_W(0);
+    Graph graph = Graph::createRandomGraph(n, -1000, 1000, edgesPercent);
+    int amount = amountOfMeasurements;
+    while (amount > 0) {
+        amount--;
+        if (amount % printEvery == 0)
+            std::cout << "default " << amount << std::endl;
+        // start counting
+        auto startDefault = std::chrono::high_resolution_clock::now();
+        graph.findMinSpanningForest();
+        // stop counting
+        auto endDefault = std::chrono::high_resolution_clock::now();
+        // find time
+        resTimeDefault += (endDefault - startDefault);
+        graph = Graph::createRandomGraph(n, -1000, 1000, edgesPercent);
+    }
+    amount = amountOfMeasurements;
+    while (amount > 0) {
+        amount--;
+        if (amount % printEvery == 0)
+            std::cout << "parallel " << amount << std::endl;
+        // start counting
+        auto startParallel = std::chrono::high_resolution_clock::now();
+        graph.parallel_findMinSpanningForest();
+        // stop counting
+        auto endParallel = std::chrono::high_resolution_clock::now();
+        // find time
+        resTimeParallel += (endParallel - startParallel);
+        graph = Graph::createRandomGraph(n, -1000, 1000, edgesPercent);
+    }
+    amount = amountOfMeasurements;
+    while (amount > 0) {
+        amount--;
+        if (amount % printEvery == 0)
+            std::cout << "parallel_without_Pool " << amount << std::endl;
+        // start counting
+        auto startParallel_W = std::chrono::high_resolution_clock::now();
+        graph.p_f();
+        // stop counting
+        auto endParallel_W = std::chrono::high_resolution_clock::now();
+        // find time
+        resTimeParallel_W += (endParallel_W - startParallel_W);
+        graph = Graph::createRandomGraph(n, -1000, 1000, edgesPercent);
+    }
+    // log
+    std::cout << std::endl << "Graph vertexes: " << n << " edges percent: " << edgesPercent << " amount of measurements: " << amountOfMeasurements <<
+        " default algorithm time: " << resTimeDefault.count() << " s" << " parallel algorithm time: " << resTimeParallel.count() << " s"
+        << " parallel_without_pool algorithm time: " << resTimeParallel_W.count() << " s" << std::endl;
+    std::fstream log;
+    log.open("log_benchmark.txt", std::ios::app | std::ios::in | std::ios::out);
+    log << "Graph vertexes: " << n << " edges percent: " << edgesPercent << " amount of measurements: " << amountOfMeasurements <<
+        " default algorithm time: " << resTimeDefault.count() << " s" << " parallel algorithm time: " << resTimeParallel.count() << " s"
+        << " parallel_without_pool algorithm time: " << resTimeParallel_W.count() << " s" << std::endl;
+    log.close();
+    return std::pair<std::chrono::duration<double>, std::chrono::duration<double>>(resTimeDefault, resTimeParallel);
+}
+/********************/
+void Graph::p_c(std::vector<Graph>& ConnectionComponents, bool& isReady) {
+    isReady = false;
+    std::vector<bool> checkedVertexes(matrix.size());
+    for (int i = 0; i < matrix.size(); i++) {
+        checkedVertexes[i] = false;
+    }
+    for (int i = 0; i < matrix.size(); i++) { // Checking all vertex
+        if (!checkedVertexes[i]) { // If not connected with previous, find new component
+            std::lock_guard<std::mutex> lock(this->mtx);
+            ConnectionComponents.push_back(findConnectionComponentForVertex(i, checkedVertexes));
+            cv.notify_one();
+        }
+    }
+    isReady = true;
+    cv.notify_all();
+}
 
+std::vector<Graph> Graph::p_f() {
+    std::vector<Graph> connectionComponents;
+    std::vector<Graph> minSpanningForest;
+    bool isReady = false;
+    std::thread t1(&Graph::p_c, this, std::ref(connectionComponents), std::ref(isReady));
+    std::unique_lock<std::mutex> lock(mtx);
+    while (!isReady) {
+        cv.wait(lock);
+        while (!connectionComponents.empty()) {
+            minSpanningForest.push_back(findMinSpanningTree(connectionComponents.back()));
+            connectionComponents.pop_back();
+        }
+    }
+    t1.join();
+    return minSpanningForest;
 }

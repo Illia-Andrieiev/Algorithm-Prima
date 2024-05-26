@@ -12,3 +12,22 @@ Graph vertexes: 200 edges percent: 8 amount of measurements: 1000 default algori
 Graph vertexes: 200 edges percent: 12 amount of measurements: 1000 default algorithm time: 20.2517 s parallel algorithm time: 18.9043 s
 Graph vertexes: 500 edges percent: 0.1 amount of measurements: 100 default algorithm time: 2.47015 s parallel algorithm time: 2.21652 s
 Graph vertexes: 500 edges percent: 0.5 amount of measurements: 200 default algorithm time: 22.5924 s parallel algorithm time: 20.1282 s
+Graph vertexes: 10 edges percent: 5 amount of measurements: 20 default algorithm time: 0.0084579 s parallel algorithm time: 8.06834 s
+Graph vertexes: 10 edges percent: 5 amount of measurements: 20 default algorithm time: 0.0093341 s parallel algorithm time: 0.0703004 s
+Graph vertexes: 100 edges percent: 5 amount of measurements: 200 default algorithm time: 1.09874 s parallel algorithm time: 1.20223 s
+Graph vertexes: 100 edges percent: 15 amount of measurements: 200 default algorithm time: 1.23748 s parallel algorithm time: 1.37525 s
+Graph vertexes: 1000 edges percent: 0.4 amount of measurements: 200 default algorithm time: 90.0798 s parallel algorithm time: 83.4217 s
+Graph vertexes: 1000 edges percent: 0.4 amount of measurements: 200 default algorithm time: 92.4862 s parallel algorithm time: 84.8664 s parallel_without_pool algorithm time: 0 s
+Graph vertexes: 1000 edges percent: 0.4 amount of measurements: 51 default algorithm time: 27.4577 s parallel algorithm time: 24.5138 s parallel_without_pool algorithm time: 23.248 s
+Graph vertexes: 1000 edges percent: 0.4 amount of measurements: 100 default algorithm time: 46.0943 s parallel algorithm time: 43.626 s parallel_without_pool algorithm time: 42.8102 s
+Graph vertexes: 1000 edges percent: 1.5 amount of measurements: 100 default algorithm time: 44.3504 s parallel algorithm time: 43.8171 s parallel_without_pool algorithm time: 43.2032 s
+Graph vertexes: 1000 edges percent: 1.5 amount of measurements: 100 default algorithm time: 44.0151 s parallel algorithm time: 43.1897 s parallel_without_pool algorithm time: 42.0383 s
+Graph vertexes: 1000 edges percent: 0.2 amount of measurements: 100 default algorithm time: 35.787 s parallel algorithm time: 32.8856 s parallel_without_pool algorithm time: 32.2663 s
+Graph vertexes: 1000 edges percent: 0.05 amount of measurements: 100 default algorithm time: 6.00789 s parallel algorithm time: 5.44082 s parallel_without_pool algorithm time: 5.855 s
+Graph vertexes: 1000 edges percent: 0.01 amount of measurements: 100 default algorithm time: 6.09501 s parallel algorithm time: 5.61485 s parallel_without_pool algorithm time: 6.10091 s
+Graph vertexes: 5000 edges percent: 0.0001 amount of measurements: 100 default algorithm time: 76.5013 s parallel algorithm time: 71.1809 s parallel_without_pool algorithm time: 79.5487 s
+Graph vertexes: 5000 edges percent: 5e-05 amount of measurements: 100 default algorithm time: 79.8505 s parallel algorithm time: 71.6238 s parallel_without_pool algorithm time: 79.539 s
+Graph vertexes: 100 edges percent: 2 amount of measurements: 1000 default algorithm time: 5.63882 s parallel algorithm time: 5.60912 s parallel_without_pool algorithm time: 4.99017 s
+Graph vertexes: 10 edges percent: 20 amount of measurements: 10000 default algorithm time: 2.5227 s parallel algorithm time: 4.68503 s parallel_without_pool algorithm time: 3.6033 s
+Graph vertexes: 20000 edges percent: 0.00015 amount of measurements: 20 default algorithm time: 219.375 s parallel algorithm time: 210.692 s parallel_without_pool algorithm time: 230.94 s
+Graph vertexes: 20000 edges percent: 0.0001 amount of measurements: 20 default algorithm time: 223.773 s parallel algorithm time: 215.346 s parallel_without_pool algorithm time: 224.267 s
