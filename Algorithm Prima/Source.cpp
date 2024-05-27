@@ -1,11 +1,7 @@
 #include <iostream>
 #include <limits>
-
 #include"Graph.h"
-bool init_unit_test()
-{
-	return true;
-}
+
 int main(int argc, char* argv[]) {
 	//double inf = std::numeric_limits<double>::infinity();
 	//if (inf == std::numeric_limits<double>::infinity())
@@ -29,8 +25,6 @@ int main(int argc, char* argv[]) {
 	//	std::cout << std::endl << "*******************************************" << std::endl;
 	//}
 	//Graph::sameGraphBenchMark(2000,0.001, 1);
-	//return boost::unit_test::unit_test_main(boost::unit_test::init_unit_test_func(), argc, argv);
-	Graph g;
-	g.test();
+	Graph::test();
 	return 0;
 }

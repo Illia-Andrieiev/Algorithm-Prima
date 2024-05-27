@@ -682,6 +682,7 @@ std::vector<Graph> Graph::p_f() {
                             Tests
 */
 
+/// Static method to testing all graph methods 
 void Graph::test() {
     using namespace boost::ut;
     suite<"Find_Connect_Components_Test"> components_tests = [] {
@@ -922,12 +923,87 @@ void Graph::test() {
             Graph g(7, -5, 5, 0);
             std::vector<Graph> forest = g.findMinSpanningForest();
 
-            expect(forest.size() == 7);
+            expect(forest.size() == 7)<<fatal;
             for (auto& tree : forest) {
                 expect(tree.size() == 1);
             }
             };
         };
+    suite<"Parallel_Find_Min_Spanning_Forest_Test"> components_tests5 = [] {
+        "test_parallel_minSpanningForest_1"_test = [] {
+            // Create a graph
+            Graph g(5, -5, 5, 0);
+            g.addEdge(0, 1, 1);
+            g.addEdge(1, 2, 2);
+            g.addEdge(2, 0, 3);
+            g.addEdge(3, 4, 4);
 
-       
+            // Find the minimum spanning forest
+            std::vector<Graph> forest = g.parallel_findMinSpanningForest();
+
+            // Check the number of trees in the forest
+            expect(forest.size() == 2) << "Number of trees in the forest must be 2";
+
+            // Check the total weight of each tree
+            double totalWeight1 = forest[0].findGraphWeight();
+            double totalWeight2 = forest[1].findGraphWeight();
+            expect(totalWeight1 == 3) << "Total weight of the first tree is not correct";
+            expect(totalWeight2 == 4) << "Total weight of the second tree is correct";
+            };
+        "test_parallel_minSpanningForest_2"_test = [] {
+            // Create a graph
+            Graph g(3, -5, 5, 0);
+            g.addEdge(0, 1, 1);
+            g.addEdge(1, 2, 2);
+            g.addEdge(2, 0, 3);
+
+            std::vector<Graph> forest = g.parallel_findMinSpanningForest();
+
+            expect(forest.size() == 1);
+            expect(forest[0].findGraphWeight() == 3);
+            };
+        "test_parallel_minSpanningForest_3"_test = [] {
+            // Create a graph
+            Graph g(7, -5, 5, 0);
+
+            g.addEdge(0, 1, 1);
+            g.addEdge(1, 2, 2);
+            g.addEdge(2, 0, 3);
+            g.addEdge(3, 4, 4);
+            g.addEdge(5, 6, 5);
+
+            std::vector<Graph> forest = g.parallel_findMinSpanningForest();
+
+            expect(forest.size() == 3);
+            expect(forest[0].findGraphWeight() == 3);
+            expect(forest[1].findGraphWeight() == 4);
+            expect(forest[2].findGraphWeight() == 5);
+            };
+        "test_parallel_minSpanningForest_4"_test = [] {
+            // Create a graph
+            Graph g(7, -5, 5, 0);
+            g.addEdge(0, 1, 1);
+            g.addEdge(1, 2, 2);
+            g.addEdge(2, 0, 3);
+            g.addEdge(3, 4, 4);
+            g.addEdge(5, 6, 5);
+
+            std::vector<Graph> forest = g.parallel_findMinSpanningForest();
+
+            expect(forest.size() == 3);
+            expect(forest[0].size() == 3);
+            expect(forest[1].size() == 2);
+            expect(forest[2].size() == 2);
+            };
+        "test_parallel_minSpanningForest_5"_test = [] {
+            // Create a graph
+            Graph g(7, -5, 5, 0);
+            std::vector<Graph> forest = g.parallel_findMinSpanningForest();
+
+            expect(forest.size() == 7) << fatal;
+            for (auto& tree : forest) {
+                expect(tree.size() == 1);
+            }
+            };
+        };
 }

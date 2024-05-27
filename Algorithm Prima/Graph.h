@@ -49,7 +49,7 @@ public:
 	static std::pair<std::chrono::duration<double>, std::chrono::duration<double>> sameGraphBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements);
 	static std::pair<std::chrono::duration<double>, std::chrono::duration<double>> sameGraphBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements, unsigned seed);
 	static std::pair<std::chrono::duration<double>, std::chrono::duration<double>> differentGraphsBenchMark(int n, double edgesPercent, unsigned amountOfMeasurements) ;
-	void test();
+	static void test();
 
 };
 /// Struct that represent graph edge. 
