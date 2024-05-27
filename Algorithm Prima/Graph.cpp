@@ -42,7 +42,7 @@ Graph& Graph::operator =(const Graph& another) {
     homomorphism = another.homomorphism;
     return *this;
 }
-bool Graph::operator ==(const Graph& another) {
+bool Graph::operator ==(const Graph& another) const{
     return matrix == another.matrix && homomorphism == another.homomorphism;
 }
 /// Create random graph with random generation seed
@@ -697,11 +697,50 @@ void Graph::test() {
             auto components = g.findConnectComponents();
 
             // Assert
-            expect(components.size() == 2 && components[0].size() == 3 && components[1].size() == 2) <<fatal<< "Number of connected components should be 2";          
+            expect(components.size() == 2 && components[0].size() == 3 && components[1].size() == 2) << fatal << "Number of connected components should be 2";
             std::vector<int> homomorphism1 = components[0].getHomomorphism();
             std::vector<int> homomorphism2 = components[1].getHomomorphism();
             expect(homomorphism1[0] == 0 && homomorphism1[1] == 1 && homomorphism1[2] == 2) << "Homomorphism do not correct!";
             expect(homomorphism2[0] == 3 && homomorphism2[1] == 4) << "Homomorphism do not correct!";
+            };
+        "test_findConnectComponentse_Symmetric "_test = [] {
+            // Arrange
+            Graph g(5, -5, 5, 0);
+            // Assuming you have a method to add edges to the graph
+            g.addEdge(0, 1, 3);
+            g.addEdge(1, 2, 5);
+            g.addEdge(3, 4, 3);
+
+            // Act
+            auto components = g.findConnectComponents();
+
+            // Assert
+            expect(components.size() == 2 && components[0].size() == 3 && components[1].size() == 2) << fatal << "Number of connected components should be 2";
+            for (auto& component : components) {
+                for (int i = 0; i < component.size(); i++) {
+                    for (int j = i; j < component.size(); j++) {
+                        expect(component.getAdjacencyMatrix()[i][j] == component.getAdjacencyMatrix()[j][i]);
+                        if (i == j) {
+                            expect(component.getAdjacencyMatrix()[i][i] == 0);
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < components[0].size(); i++) {
+                for (int j = i + 1; j < components[0].size(); j++) {
+                    if (i == 0 && j == 1) {
+                        expect(components[0].getAdjacencyMatrix()[i][j] == 3);
+                    }
+                    else {
+                        if (i == 1 && j == 2) {
+                            expect(components[0].getAdjacencyMatrix()[i][j] == 5);
+                        }
+                        else {
+                            expect(components[0].getAdjacencyMatrix()[i][j] == std::numeric_limits<double>::infinity());
+                        }
+                    }
+                }
+            }
             };
         "test_findConnectComponents_homomorphismAndWeight"_test = [] {
             // Arrange
@@ -716,8 +755,8 @@ void Graph::test() {
             auto components = g.findConnectComponents();
 
             // Assert
-            expect(components.size() == 3 && components[0].size() == 2 && components[1].size() == 4 && components[2].size() ==2) << fatal << "Number of connected components should be 3";
-        
+            expect(components.size() == 3 && components[0].size() == 2 && components[1].size() == 4 && components[2].size() == 2) << fatal << "Number of connected components should be 3";
+
             std::vector<int> homomorphism1 = components[0].getHomomorphism();
             std::vector<int> homomorphism2 = components[1].getHomomorphism();
             std::vector<int> homomorphism3 = components[2].getHomomorphism();
@@ -730,17 +769,17 @@ void Graph::test() {
             };
         "test_findConnectComponents_single_vertex"_test = [] {
             // Arrange
-            Graph g(1,-5,5,0);
+            Graph g(1, -5, 5, 0);
             // Act
             auto components = g.findConnectComponents();
 
             // Assert
-            expect(components.size() == 1 && components[0].size()==1) << "Number of connected components should be 1 for a single vertex graph";
+            expect(components.size() == 1 && components[0].size() == 1) << "Number of connected components should be 1 for a single vertex graph";
             };
 
         "test_findConnectComponents_disconnected_vertexes"_test = [] {
             // Arrange
-            Graph g(2,-5,5,0);
+            Graph g(2, -5, 5, 0);
 
             // Act
             auto components = g.findConnectComponents();
@@ -751,14 +790,144 @@ void Graph::test() {
 
         "test_findConnectComponents_connected_vertexes"_test = [] {
             // Arrange
-            Graph g(2,-5,5,0);
-            g.addEdge(0, 1,3);
-          
+            Graph g(2, -5, 5, 0);
+            g.addEdge(0, 1, 3);
+
             // Act
             auto components = g.findConnectComponents();
 
             // Assert
             expect(components.size() == 1 && components[0].size() == 2) << "Number of connected components should be 1 for a graph with two connected vertices";
             };
+    };
+ 
+    suite<"Create_Random_Graph_Test"> components_tests2 = [] {
+        "test_createRandomGraph"_test = [] {
+            int n = 5;
+            double minWeight = 1.0;
+            double maxWeight = 10.0;
+            unsigned seed = 123;
+            double edgesPercent = 50.0;
+
+            Graph g = Graph::createRandomGraph(n, minWeight, maxWeight, seed, edgesPercent);
+
+            expect( g.matrix.size() == n);
+
+            int edgeCount = 0;
+            for (const auto& row : g.matrix) {
+                for (const auto& weight : row) {
+                    if (weight != std::numeric_limits<double>::infinity() && weight != 0) {
+                        edgeCount++;
+                        expect( weight >= minWeight && weight <= maxWeight);
+                    }
+                }
+            }
+            edgeCount /= 2; // Since the graph is undirected
+
+            int expectedEdges = static_cast<int>((n * (n - 1) / 2.0) * (edgesPercent / 100.0));
+            expect( edgeCount == expectedEdges);
+
+            for (int i = 0; i < n; i++) {
+                expect( g.matrix[i][i] == 0);
+                for (int j = i + 1; j < n; j++) {
+                    expect( g.matrix[i][j] == g.matrix[j][i]);
+                }
+            }
+            };
+
+    };
+    suite<"Constructor_Graph_Test"> components_tests3= [] {
+        "test_constructorGraph"_test = [] {
+            Graph g(8, -5, 5, 0);
+            // Assuming you have a method to add edges to the graph
+            g.addEdge(0, 5, 3);
+            g.addEdge(1, 2, 1.5);
+            g.addEdge(1, 6, -3);
+            g.addEdge(1, 7, -2);
+            g.addEdge(3, 4, 5);
+            // Act
+            auto components = g.findConnectComponents();
+            Graph copyFromComponents(components);   
+            expect(copyFromComponents == g);
+            };
         };
+    suite<"Find_Min_Spanning_Forest_Test"> components_tests4 = [] {
+        "test_minSpanningForest_1"_test = [] {
+            // Create a graph
+            Graph g(5,-5,5,0);
+            g.addEdge(0, 1, 1);
+            g.addEdge(1, 2, 2);
+            g.addEdge(2, 0, 3);
+            g.addEdge(3, 4, 4);
+
+            // Find the minimum spanning forest
+            std::vector<Graph> forest = g.findMinSpanningForest();
+
+            // Check the number of trees in the forest
+            expect(forest.size() == 2)<< "Number of trees in the forest must be 2";
+
+            // Check the total weight of each tree
+            double totalWeight1 = forest[0].findGraphWeight();
+            double totalWeight2 = forest[1].findGraphWeight();
+            expect(totalWeight1 == 3)<< "Total weight of the first tree is not correct";
+            expect(totalWeight2 == 4)<< "Total weight of the second tree is correct";
+            };
+        "test_minSpanningForest_2"_test = [] {
+            // Create a graph
+            Graph g(3, -5, 5, 0);
+            g.addEdge(0, 1, 1);
+            g.addEdge(1, 2, 2);
+            g.addEdge(2, 0, 3);
+
+            std::vector<Graph> forest = g.findMinSpanningForest();
+
+            expect( forest.size() == 1);
+            expect( forest[0].findGraphWeight() == 3);
+            };
+        "test_minSpanningForest_3"_test = [] {
+            // Create a graph
+            Graph g(7, -5, 5, 0);
+          
+            g.addEdge(0, 1, 1);
+            g.addEdge(1, 2, 2);
+            g.addEdge(2, 0, 3);
+            g.addEdge(3, 4, 4);
+            g.addEdge(5, 6, 5);
+
+            std::vector<Graph> forest = g.findMinSpanningForest();
+
+            expect( forest.size() == 3);
+            expect(forest[0].findGraphWeight() == 3);
+            expect(forest[1].findGraphWeight() == 4);
+            expect(forest[2].findGraphWeight() == 5);
+            };
+        "test_minSpanningForest_4"_test = [] {
+            // Create a graph
+            Graph g(7, -5, 5, 0);
+            g.addEdge(0, 1, 1);
+            g.addEdge(1, 2, 2);
+            g.addEdge(2, 0, 3);
+            g.addEdge(3, 4, 4);
+            g.addEdge(5, 6, 5);
+
+            std::vector<Graph> forest = g.findMinSpanningForest();
+
+            expect(forest.size() == 3);
+            expect(forest[0].size() == 3);
+            expect(forest[1].size() == 2);
+            expect(forest[2].size() == 2);
+            };
+        "test_minSpanningForest_5"_test = [] {
+            // Create a graph
+            Graph g(7, -5, 5, 0);
+            std::vector<Graph> forest = g.findMinSpanningForest();
+
+            expect(forest.size() == 7);
+            for (auto& tree : forest) {
+                expect(tree.size() == 1);
+            }
+            };
+        };
+
+       
 }

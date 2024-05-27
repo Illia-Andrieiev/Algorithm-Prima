@@ -29,7 +29,7 @@ public:
 	std::vector<std::vector<double>> getAdjacencyMatrix() const;
 	static Graph createRandomGraph(int n, double minWeight, double maxWeight, double edgesPercent);
 	static Graph createRandomGraph(int n, double minWeight, double maxWeight, unsigned seed, double edgesPercent);
-	bool operator ==(const Graph& another);
+	bool operator ==(const Graph& another) const;
 	Graph();
 	Graph(const std::vector<std::vector<double>>& matrix);
 	Graph(const Graph& another);
