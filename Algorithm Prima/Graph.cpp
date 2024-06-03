@@ -1005,5 +1005,35 @@ void Graph::test() {
                 expect(tree.size() == 1);
             }
             };
+        "test_is_parallel_same_with_default_1"_test = [] {
+            // Create a graph
+            Graph g(20, -5, 5, 20);
+            std::vector<Graph> forest1 = g.parallel_findMinSpanningForest();
+            std::vector<Graph> forest2 = g.findMinSpanningForest();
+            expect(forest1.size() == forest2.size()) << fatal;
+            for (int i = 0; i < forest1.size(); i++) {
+                expect(forest1[i] == forest2[i]);
+            }
+            };
+        "test_is_parallel_same_with_default_2"_test = [] {
+            // Create a graph
+            Graph g(50, -5, 5, 10);
+            std::vector<Graph> forest1 = g.parallel_findMinSpanningForest();
+            std::vector<Graph> forest2 = g.findMinSpanningForest();
+            expect(forest1.size() == forest2.size()) << fatal;
+            for (int i = 0; i < forest1.size(); i++) {
+                expect(forest1[i] == forest2[i]);
+            }
+            };
+        "test_is_parallel_same_with_default_3"_test = [] {
+            // Create a graph
+            Graph g(20, -5, 5, 50);
+            std::vector<Graph> forest1 = g.parallel_findMinSpanningForest();
+            std::vector<Graph> forest2 = g.findMinSpanningForest();
+            expect(forest1.size() == forest2.size()) << fatal;
+            for (int i = 0; i < forest1.size(); i++) {
+                expect(forest1[i] == forest2[i]);
+            }
+            };
         };
 }

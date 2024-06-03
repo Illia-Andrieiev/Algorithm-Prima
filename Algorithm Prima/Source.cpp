@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) {
 	//if (inf == std::numeric_limits<double>::infinity())
 	//	inf = 5;
 	//std::cout << "Infinity: " << inf << std::endl;
-	//Graph g = Graph::createRandomGraph(10, -5, 5, 50);
+	//Graph g = Graph::createRandomGraph(10, -5, 5, 15);
 	//g.printEdges();
 	//std::cout << std::endl << "********************************************" << std::endl;
 	//std::vector<Graph> compn = g.findConnectComponents();
