@@ -5,8 +5,9 @@
 #include<chrono>
 #include<mutex>
 #include<list>
-/// Graph represented as adjacency matrix
+
 class Graph;
+/// Graph interface
 class GraphInterface
 {
 public:
@@ -22,6 +23,7 @@ public:
 	virtual int size() const = 0;
 	virtual double findGraphWeight() const = 0;
 };
+/// Graph represented as adjacency matrix
 class Graph :public GraphInterface
 {
 	void p_c(std::vector<Graph>& ConnectionComponents, bool& isReady);

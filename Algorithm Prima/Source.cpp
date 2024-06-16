@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 	//}
 	//Graph::sameGraphBenchMark(2000,0.001, 1);
 	Graph g(10, 1, 10, 20);
-	GraphProxyLogger log(&g, "loggerProxy.txt");
+	GraphProxyLogger log(g, "loggerProxy.txt");
 	log.findConnectComponents();
 	log.getHomomorphism();
 	//delete g;

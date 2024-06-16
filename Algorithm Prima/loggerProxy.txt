@@ -2,3 +2,7 @@ findConnectComponents started
 findConnectComponents ended
 gethomomorphism started
 gethomomorphism ended
+findConnectComponents started
+findConnectComponents ended
+gethomomorphism started
+gethomomorphism ended
