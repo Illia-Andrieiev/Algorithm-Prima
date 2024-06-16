@@ -6,7 +6,23 @@
 #include<mutex>
 #include<list>
 /// Graph represented as adjacency matrix
-class Graph
+class Graph;
+class GraphInterface
+{
+public:
+	virtual std::vector<int> getHomomorphism() const = 0;
+	virtual std::vector<std::vector<double>> getAdjacencyMatrix() const = 0;
+	virtual void printMatrix() const = 0;
+	virtual void printEdges() const = 0;
+	virtual void addEdge(int vertex1, int vertex2, double weight) = 0;
+	virtual void removeEdge(int vertex1, int vertex2) = 0;
+	virtual std::vector<Graph> findConnectComponents() const = 0;
+	virtual std::vector<Graph> findMinSpanningForest() const = 0;
+	virtual std::vector<Graph> parallel_findMinSpanningForest() = 0;
+	virtual int size() const = 0;
+	virtual double findGraphWeight() const = 0;
+};
+class Graph :public GraphInterface
 {
 	void p_c(std::vector<Graph>& ConnectionComponents, bool& isReady);
 	std::vector<Graph> p_f();
